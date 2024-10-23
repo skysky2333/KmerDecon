@@ -9,5 +9,6 @@ src/KmerDecon/utils.py
 src/KmerDecon.egg-info/PKG-INFO
 src/KmerDecon.egg-info/SOURCES.txt
 src/KmerDecon.egg-info/dependency_links.txt
+src/KmerDecon.egg-info/entry_points.txt
 src/KmerDecon.egg-info/requires.txt
 src/KmerDecon.egg-info/top_level.txt

@@ -24,32 +24,25 @@ KmerDecon is a fast, memory-efficient tool for decontaminating sequencing reads 
 
 ### Steps:
 
-1. Clone the repository:
+1. Install directory:
+   ```
+   pip install KmerDecon
+   ```
 
-    ```bash
+2. Alternatively, to get the lastest version, you can clone the repository:
+
+    ```
     git clone https://github.com/skysky2333/KmerDecon
-    ```
-
-2. Navigate to the project directory:
-
-    ```bash
-    cd KmerDecon
-    ```
-
-3. Install the package:
-
-    ```bash
-    pip install .
     ```
 
 ## Usage
 
 ### 1. Building the Bloom Filter
 
-Generate a Bloom filter from contamination source sequences.
+Generate a Bloom filter from contamination source sequences. Use `kbuild --help` for more detail.
 
-```bash
-build-bloom-filter --contamination-fasta contamination.fasta --output-filter contamination_filter.bf
+```
+kbuild --contamination-fasta contamination.fasta --output-filter contamination_filter.bf
 ```
 
 **Optional Arguments:**
@@ -61,10 +54,10 @@ build-bloom-filter --contamination-fasta contamination.fasta --output-filter con
 
 ### 2. Decontaminating Reads
 
-Filter out contaminated reads from your sequencing data.
+Filter out contaminated reads from your sequencing data. Use `kdecon --help` for more detail.
 
-```bash
-decontaminate-reads --input-reads reads.fastq(can_also_be_directory) --bloom-filter contamination_filter.bf(can_also_be_directory) --output-dir output_directory
+```
+kdecon --input-reads reads.fastq(can_also_be_directory) --bloom-filter contamination_filter.bf(can_also_be_directory) --output-dir output_directory
 ```
 
 **Optional Arguments:**

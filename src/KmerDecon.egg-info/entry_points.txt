@@ -1,0 +1,3 @@
+[console_scripts]
+kbuild = KmerDecon.build_bloom_filter:main
+kdecon = KmerDecon.decontaminate_reads:main
