@@ -1,3 +1,4 @@
+[![PyPI version](https://img.shields.io/pypi/v/KmerDecon.svg)](https://pypi.org/project/KmerDecon/)
 # KmerDecon
 
 KmerDecon is a fast, memory-efficient tool for decontaminating sequencing reads using Bloom filters. It generate detailed reports of contaminants in sequencing data.
