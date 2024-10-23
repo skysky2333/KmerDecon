@@ -12,6 +12,7 @@ KmerDecon is a fast, memory-efficient tool for decontaminating sequencing reads 
 - **Speed**: Utilizes efficient hashing with MurmurHash3 for fast k-mer processing.
 - **Memory Efficiency**: Employs Bloom filters with dynamic sizing to balance memory usage and accuracy, capable of handling billions of k-mers with minimal RAM.
 - **Scalability**: Suitable for large datasets, such as whole-genome sequencing reads and large contamination sources like the human genome.
+- **Detailed Reporting**: Generates comprehensive reports on contamination levels across multiple samples and filters.
 - **Real-Time Processing**: Allows for decontamination during data streaming or generation, providing immediate feedback and contaminant removal. (TODO)
 
 ## Installation
@@ -63,13 +64,18 @@ build-bloom-filter --contamination-fasta contamination.fasta --output-filter con
 Filter out contaminated reads from your sequencing data.
 
 ```bash
-decontaminate-reads --input-reads reads.fastq --bloom-filter contamination_filter.bf --output-reads decontaminated_reads.fastq
+decontaminate-reads --input-reads reads.fastq(can_also_be_directory) --bloom-filter contamination_filter.bf(can_also_be_directory) --output-dir output_directory
 ```
 
 **Optional Arguments:**
 
 - `threshold`: Fraction of matching k-mers to consider a read contaminated (default: 0.5).
 - `kmer-length`: Length of k-mers used. If not provided, the k-mer length from the Bloom filter is used.
+- `mode`: Operation mode, either filter (default) or states.
+  - filter: Filters reads based on contamination levels.
+  - states: Generates a states.csv report with contamination statistics. Columns:
+	- {filter}_avgSimilarity: The average fraction of matching k-mers across all reads in that file for each filter.
+	- {filter}_percentReadsPassing: The percentage of reads passing the threshold for each filter.
 
 
 ## Dependencies
