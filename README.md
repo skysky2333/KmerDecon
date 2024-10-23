@@ -1,14 +1,18 @@
 # KmerDecon
 
-KmerDecon is a fast, memory-efficient tool for decontaminating sequencing reads using Bloom filters. It allows for on-the-fly filtering of contaminants in sequencing data.
+KmerDecon is a fast, memory-efficient tool for decontaminating sequencing reads using Bloom filters. It generate detailed reports of contaminants in sequencing data.
 ## Authors
-Yujia Feng, Xiaoyi Chen, Yuxiang Li
+- Yujia Feng
+- Xiaoyi Chen
+- Yuxiang Li
 
 ## Features
 
-- **Speed**: Utilizes Bloom filters for constant-time membership queries.
-- **Memory Efficiency**: Compact representation reduces RAM usage.
-- **Real-Time Processing**: Decontamination during data streaming or generation.
+- **Automatic Parameter Optimization**: Automatically determines the optimal k-mer length and adjusts parameters based on desired memory and false positive rate using tools like HyperLogLog.
+- **Speed**: Utilizes efficient hashing with MurmurHash3 for fast k-mer processing.
+- **Memory Efficiency**: Employs Bloom filters with dynamic sizing to balance memory usage and accuracy, capable of handling billions of k-mers with minimal RAM.
+- **Scalability**: Suitable for large datasets, such as whole-genome sequencing reads and large contamination sources like the human genome.
+- **Real-Time Processing**: Allows for decontamination during data streaming or generation, providing immediate feedback and contaminant removal. (TODO)
 
 ## Installation
 
@@ -44,49 +48,36 @@ Yujia Feng, Xiaoyi Chen, Yuxiang Li
 Generate a Bloom filter from contamination source sequences.
 
 ```bash
-build-bloom-filter --contamination-fasta contamination.fasta --kmer-length 31 --output-filter contamination_filter.bf
+build-bloom-filter --contamination-fasta contamination.fasta --output-filter contamination_filter.bf
 ```
 
-**Arguments:**
+**Optional Arguments:**
 
-- `--contamination-fasta`: Path to the FASTA file containing contamination sequences.
-- `--kmer-length`: Length of k-mers to generate (e.g., 31).
-- `--output-filter`: Output filename for the Bloom filter.
+- `kmer-length`: Length of k-mers to generate (e.g., 31). If not provided, the tool determines the optimal k-mer length automatically.
+- `max-memory`: Maximum memory in GB for the Bloom filter. Adjusts parameters to fit within this limit.
+- `false-positive-rate`: Desired false positive rate (default: 0.001).
+- `expected-elements`: Expected number of unique k-mers. If not provided, it is estimated using HyperLogLog.
 
 ### 2. Decontaminating Reads
 
 Filter out contaminated reads from your sequencing data.
 
 ```bash
-decontaminate-reads --input-reads reads.fastq --bloom-filter contamination_filter.bf --threshold 0.5 --kmer-length 31 --output-reads decontaminated_reads.fastq
+decontaminate-reads --input-reads reads.fastq --bloom-filter contamination_filter.bf --output-reads decontaminated_reads.fastq
 ```
 
-**Arguments:**
+**Optional Arguments:**
 
-- `--input-reads`: Path to the input FASTQ file with sequencing reads.
-- `--bloom-filter`: Path to the Bloom filter file generated earlier.
-- `--threshold`: Fraction of matching k-mers to consider a read contaminated (default: 0.5).
-- `--kmer-length`: Length of k-mers used (must match the value used when building the filter).
-- `--output-reads`: Output FASTQ file for decontaminated reads.
+- `threshold`: Fraction of matching k-mers to consider a read contaminated (default: 0.5).
+- `kmer-length`: Length of k-mers used. If not provided, the k-mer length from the Bloom filter is used.
 
-### Examples
-
-**Building the Bloom Filter**
-
-```bash
-build-bloom-filter --contamination-fasta human_genome.fasta --kmer-length 31 --output-filter human_bloom_filter.bf
-```
-
-**Decontaminating Reads**
-
-```bash
-decontaminate-reads --input-reads sample_reads.fastq --bloom-filter human_bloom_filter.bf --threshold 0.5 --kmer-length 31 --output-reads decontaminated_reads.fastq
-```
 
 ## Dependencies
 
 - `bitarray>=2.1.0`
 - `biopython>=1.78`
+- `mmh3>=2.5.1`
+- `hyperloglog>=0.0.12`
 
 Install dependencies with:
 
@@ -96,12 +87,7 @@ pip install -r requirements.txt
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Commit your changes.
-4. Submit a pull request with a detailed description.
+Contributions and PRs are welcome!
 
 ## License
 

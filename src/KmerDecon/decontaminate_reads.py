@@ -15,17 +15,25 @@ def main():
                         help='Bloom filter file for contamination.')
     parser.add_argument('-t', '--threshold', type=float, default=0.5,
                         help='Contamination threshold (default: 0.5).')
-    parser.add_argument('-k', '--kmer-length', type=int, required=True,
-                        help='Length of k-mers.')
+    parser.add_argument('-k', '--kmer-length', type=int,
+                        help='Length of k-mers. If not provided, it will use the k-mer length from the Bloom filter.')
     parser.add_argument('-o', '--output-reads', required=True,
                         help='Output FASTQ file for decontaminated reads.')
 
     args = parser.parse_args()
 
-    # Load the Bloom filter
     print("Loading Bloom filter...")
     bloom_filter = BloomFilter.load(args.bloom_filter)
     print("Bloom filter loaded.")
+
+    # Determine k-mer length
+    if args.kmer_length:
+        k = args.kmer_length
+        if k != bloom_filter.kmer_length:
+            print(f"Warning: Provided k-mer length ({k}) does not match the k-mer length used in the Bloom filter ({bloom_filter.kmer_length}).")
+    else:
+        k = bloom_filter.kmer_length
+        print(f"Using k-mer length {k} from the Bloom filter.")
 
     with open(args.output_reads, 'w') as out_f:
         print("Starting decontamination...")
@@ -34,16 +42,15 @@ def main():
         for record in SeqIO.parse(args.input_reads, "fastq"):
             total_reads += 1
             seq = str(record.seq).upper()
-            kmers = list(generate_kmers(seq, args.kmer_length))
-            if not kmers:
+            if len(seq) < k:
                 continue  # Skip reads shorter than k
+            kmers = generate_kmers(seq, k)
             count = sum(1 for kmer in kmers if kmer in bloom_filter)
-            fraction = count / len(kmers)
+            num_kmers = len(seq) - k + 1
+            fraction = count / num_kmers
             if fraction < args.threshold:
-                # Keep the read
                 SeqIO.write(record, out_f, "fastq")
                 kept_reads += 1
-            # Else, the read is discarded (contaminated)
         print(f"Decontamination completed. {kept_reads}/{total_reads} reads kept.")
 
 if __name__ == "__main__":

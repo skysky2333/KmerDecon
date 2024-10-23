@@ -14,6 +14,8 @@ setup(
     install_requires=[
         'bitarray>=2.1.0',
         'biopython>=1.78',
+        'mmh3>=2.5.1',
+        'hyperloglog>=0.0.12',
     ],
     classifiers=[
         'Programming Language :: Python :: 3',

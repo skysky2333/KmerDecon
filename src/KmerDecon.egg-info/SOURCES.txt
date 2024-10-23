@@ -1,0 +1,13 @@
+LICENSE
+README.md
+setup.py
+src/KmerDecon/__init__.py
+src/KmerDecon/bloom_filter.py
+src/KmerDecon/build_bloom_filter.py
+src/KmerDecon/decontaminate_reads.py
+src/KmerDecon/utils.py
+src/KmerDecon.egg-info/PKG-INFO
+src/KmerDecon.egg-info/SOURCES.txt
+src/KmerDecon.egg-info/dependency_links.txt
+src/KmerDecon.egg-info/requires.txt
+src/KmerDecon.egg-info/top_level.txt

@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: KmerDecon
+Version: 0.1.0
+Summary: Fast, memory-efficient decontamination of sequencing reads using Bloom filters
+Home-page: https://github.com/skysky2333/KmerDecon
+Author: Yujia Feng, Xiaoyi Chen, Yuxiang Li
+Author-email: yli694@jh.edu
+License: MIT
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Requires-Python: >=3.6
+License-File: LICENSE
+Requires-Dist: bitarray>=2.1.0
+Requires-Dist: biopython>=1.78
+Requires-Dist: mmh3>=2.5.1
+Requires-Dist: hyperloglog>=0.0.12

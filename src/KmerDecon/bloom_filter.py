@@ -1,7 +1,5 @@
-# src/KmerDecon/bloom_filter.py
-
 import math
-import hashlib
+import mmh3
 from bitarray import bitarray
 from typing import Any
 
@@ -10,14 +8,18 @@ class BloomFilter:
     A Bloom filter for efficient k-mer storage and lookup.
     """
 
-    def __init__(self, expected_elements: int, false_positive_rate: float):
+    def __init__(self, expected_elements: int, false_positive_rate: float, kmer_length: int):
         """
         Initialize the Bloom filter.
 
         Args:
             expected_elements (int): Estimated number of elements to store.
             false_positive_rate (float): Desired false positive rate.
+            kmer_length (int): Length of k-mers used.
         """
+        self.expected_elements = expected_elements
+        self.false_positive_rate = false_positive_rate
+        self.kmer_length = kmer_length
         self.size = self._get_size(expected_elements, false_positive_rate)
         self.hash_count = self._get_hash_count(self.size, expected_elements)
         self.bit_array = bitarray(self.size)
@@ -51,9 +53,8 @@ class BloomFilter:
             item (Any): The item to add.
         """
         for i in range(self.hash_count):
-            digest = hashlib.sha256(f"{item}{i}".encode('utf-8')).hexdigest()
-            index = int(digest, 16) % self.size
-            self.bit_array[index] = True
+            digest = mmh3.hash(item, i) % self.size
+            self.bit_array[digest] = True
 
     def __contains__(self, item: Any) -> bool:
         """
@@ -66,9 +67,8 @@ class BloomFilter:
             bool: True if the item is probably in the filter, False if definitely not.
         """
         for i in range(self.hash_count):
-            digest = hashlib.sha256(f"{item}{i}".encode('utf-8')).hexdigest()
-            index = int(digest, 16) % self.size
-            if not self.bit_array[index]:
+            digest = mmh3.hash(item, i) % self.size
+            if not self.bit_array[digest]:
                 return False
         return True
 
@@ -84,6 +84,10 @@ class BloomFilter:
         with open(f"{filename}.params", 'w') as f:
             f.write(f"{self.size}\n")
             f.write(f"{self.hash_count}\n")
+            f.write(f"{self.expected_elements}\n")
+            f.write(f"{self.false_positive_rate}\n")
+            f.write(f"{self.kmer_length}\n")
+            f.write(f"{len(self.bit_array)}\n")  # Save the actual bit length
 
     @classmethod
     def load(cls, filename: str) -> 'BloomFilter':
@@ -99,10 +103,22 @@ class BloomFilter:
         with open(f"{filename}.params", 'r') as f:
             size = int(f.readline())
             hash_count = int(f.readline())
+            expected_elements = int(f.readline())
+            false_positive_rate = float(f.readline())
+            kmer_length = int(f.readline())
+            bitarray_length = int(f.readline())
+
         bloom_filter = cls.__new__(cls)
         bloom_filter.size = size
         bloom_filter.hash_count = hash_count
-        bloom_filter.bit_array = bitarray(size)
+        bloom_filter.expected_elements = expected_elements
+        bloom_filter.false_positive_rate = false_positive_rate
+        bloom_filter.kmer_length = kmer_length
+        bloom_filter.bit_array = bitarray()
+
         with open(filename, 'rb') as f:
             bloom_filter.bit_array.fromfile(f)
+
+        bloom_filter.bit_array = bloom_filter.bit_array[:bitarray_length]
+
         return bloom_filter
