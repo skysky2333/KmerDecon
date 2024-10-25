@@ -34,6 +34,8 @@ KmerDecon is a fast, memory-efficient tool for decontaminating sequencing reads 
 
     ```
     git clone https://github.com/skysky2333/KmerDecon
+    cd KmerDecon
+    pip install .
     ```
 
 ## Usage

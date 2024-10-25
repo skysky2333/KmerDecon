@@ -2,6 +2,7 @@ import math
 import mmh3
 from bitarray import bitarray
 from typing import Any
+import gzip
 
 class BloomFilter:
     """
@@ -74,12 +75,12 @@ class BloomFilter:
 
     def save(self, filename: str) -> None:
         """
-        Save the Bloom filter to a file.
+        Save the Bloom filter to a compressed file using gzip.
 
         Args:
             filename (str): The filename to save the filter to.
         """
-        with open(filename, 'wb') as f:
+        with gzip.open(filename, 'wb') as f:
             self.bit_array.tofile(f)
         with open(f"{filename}.params", 'w') as f:
             f.write(f"{self.size}\n")
@@ -87,12 +88,12 @@ class BloomFilter:
             f.write(f"{self.expected_elements}\n")
             f.write(f"{self.false_positive_rate}\n")
             f.write(f"{self.kmer_length}\n")
-            f.write(f"{len(self.bit_array)}\n")  # Save the actual bit length
+            f.write(f"{len(self.bit_array)}\n")
 
     @classmethod
     def load(cls, filename: str) -> 'BloomFilter':
         """
-        Load a Bloom filter from a file.
+        Load a Bloom filter from a compressed file using gzip.
 
         Args:
             filename (str): The filename to load the filter from.
@@ -116,7 +117,7 @@ class BloomFilter:
         bloom_filter.kmer_length = kmer_length
         bloom_filter.bit_array = bitarray()
 
-        with open(filename, 'rb') as f:
+        with gzip.open(filename, 'rb') as f:
             bloom_filter.bit_array.fromfile(f)
 
         bloom_filter.bit_array = bloom_filter.bit_array[:bitarray_length]

@@ -102,7 +102,7 @@ def main():
     bloom_filter = BloomFilter(n_unique, false_positive_rate, k)
 
     bloom_size_bytes = bloom_filter.size / 8
-    print(f"Bloom filter size: {bloom_size_bytes / (1024 ** 3):.4f} GB")
+    print(f"Bloom filter size: {bloom_size_bytes / (1024 ** 3):.4f} GB, est. file size {bloom_size_bytes / (1024 ** 3)*30:.4f} MB")
     print(f"Number of hash functions: {bloom_filter.hash_count}")
 
     print("Building Bloom filter...")

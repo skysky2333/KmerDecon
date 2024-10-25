@@ -1,3 +1,0 @@
-input_file,filter_avgFrac,filter_percentPassing,filter2_avgFrac,filter2_percentPassing
-seq2.fastq,0.5,50.0,0.5,50.0
-seq.fastq,0.4,60.0,0.2,80.0
