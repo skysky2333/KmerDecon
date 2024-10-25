@@ -43,7 +43,7 @@ KmerDecon is a fast, memory-efficient tool for decontaminating sequencing reads 
 Generate a Bloom filter from contamination source sequences. Use `kbuild --help` for more detail.
 
 ```
-kbuild --contamination-fasta contamination.fasta --output-filter contamination_filter.bf
+kbuild -c contamination.fasta -o contamination_filter.bf
 ```
 
 **Optional Arguments:**
@@ -58,7 +58,7 @@ kbuild --contamination-fasta contamination.fasta --output-filter contamination_f
 Filter out contaminated reads from your sequencing data. Use `kdecon --help` for more detail.
 
 ```
-kdecon --input-reads reads.fastq(can_also_be_directory) --bloom-filter contamination_filter.bf(can_also_be_directory) --output-dir output_directory
+kdecon -i reads.fastq -b example_filter/hg38.bf -o output
 ```
 
 **Optional Arguments:**

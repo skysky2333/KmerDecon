@@ -86,8 +86,8 @@ def main():
         csv_file = open(states_filename, 'w', newline='')
         fieldnames = ['input_file']
         for filter_name, _ in bloom_filters:
-            fieldnames.append(f"{filter_name}_avgFrac")
-            fieldnames.append(f"{filter_name}_percentPassing")
+            fieldnames.append(f"{filter_name}_avgSimilarity")
+            fieldnames.append(f"{filter_name}_percentReadsPassing")
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
 

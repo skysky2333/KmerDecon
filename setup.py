@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="KmerDecon",
-    version="0.1.0",
+    version="0.1.1",
     author="Yuxiang Li, Yujia Feng, Xiaoyi Chen",
     description="A fast, memory-efficient tool for decontaminating sequencing reads using Bloom filters.",
     long_description=open('README.md').read(),

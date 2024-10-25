@@ -7,6 +7,7 @@ from Bio import SeqIO
 from hyperloglog import HyperLogLog
 import math
 import statistics
+from tqdm import tqdm
 
 def estimate_unique_kmers(contamination_fasta: str, k: int) -> int:
     """
@@ -21,7 +22,7 @@ def estimate_unique_kmers(contamination_fasta: str, k: int) -> int:
     """
     print(f"Estimating the number of unique {k}-mers in contamination sequences using HyperLogLog...")
     hll = HyperLogLog(0.01)  # 1% relative error
-    for record in SeqIO.parse(contamination_fasta, "fasta"):
+    for record in tqdm(SeqIO.parse(contamination_fasta, "fasta"),desc="Estimating the number of unique k-mers"):
         seq = str(record.seq).upper()
         for kmer in generate_kmers(seq, k):
             hll.add(kmer)
@@ -41,7 +42,7 @@ def determine_best_kmer_length(contamination_fasta: str) -> int:
     """
     print("Determining the best k-mer length...")
     lengths = []
-    for record in SeqIO.parse(contamination_fasta, "fasta"):
+    for record in tqdm(SeqIO.parse(contamination_fasta, "fasta"),desc="Determining the best k-mer length"):
         lengths.append(len(record.seq))
     if not lengths:
         print("No sequences found in the contamination FASTA file.")
@@ -53,7 +54,7 @@ def determine_best_kmer_length(contamination_fasta: str) -> int:
         suggested_k = 21
     elif suggested_k > 127:
         suggested_k = 127
-    # Ensure k is odd (common practice)
+    # Ensure k is odd
     if suggested_k % 2 == 0:
         suggested_k += 1
     print(f"Suggested k-mer length: {suggested_k}")
@@ -69,8 +70,8 @@ def main():
                         help='Length of k-mers. If not provided, it will be determined automatically.')
     parser.add_argument('-o', '--output-filter', required=True,
                         help='Output Bloom filter file.')
-    parser.add_argument('-p', '--false-positive-rate', type=float, default=0.001,
-                        help='Desired false positive rate (default: 0.001).')
+    parser.add_argument('-p', '--false-positive-rate', type=float, default=0.01,
+                        help='Desired false positive rate (default: 0.01).')
     parser.add_argument('-e', '--expected-elements', type=int,
                         help='Expected number of unique k-mers. If not provided, it will be estimated.')
     parser.add_argument('-m', '--max-memory', type=float,
@@ -105,7 +106,7 @@ def main():
     print(f"Number of hash functions: {bloom_filter.hash_count}")
 
     print("Building Bloom filter...")
-    for record in SeqIO.parse(args.contamination_fasta, "fasta"):
+    for record in tqdm(SeqIO.parse(args.contamination_fasta, "fasta"),desc="Building Bloom filter"):
         seq = str(record.seq).upper()
         for kmer in generate_kmers(seq, k):
             bloom_filter.add(kmer)
