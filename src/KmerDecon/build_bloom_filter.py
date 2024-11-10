@@ -9,26 +9,31 @@ import math
 import statistics
 from tqdm import tqdm
 
-def estimate_unique_kmers(contamination_fasta: str, k: int) -> int:
+def estimate_unique_kmers(contamination_fasta: str, k: int, exclude_filter: BloomFilter = None) -> int:
     """
     Estimate the number of unique k-mers in the contamination sequences using HyperLogLog.
 
     Args:
         contamination_fasta (str): Path to the contamination FASTA file.
         k (int): Length of k-mers.
+        exclude_filter (BloomFilter): excluded filter used.
 
     Returns:
         int: Estimated number of unique k-mers.
     """
     print(f"Estimating the number of unique {k}-mers in contamination sequences using HyperLogLog...")
     hll = HyperLogLog(0.01)  # 1% relative error
-    for record in tqdm(SeqIO.parse(contamination_fasta, "fasta"),desc="Estimating the number of unique k-mers"):
+    total_kmers = 0
+    for record in tqdm(SeqIO.parse(contamination_fasta, "fasta"), desc="Estimating the number of unique k-mers"):
         seq = str(record.seq).upper()
         for kmer in generate_kmers(seq, k):
+            total_kmers += 1
+            if exclude_filter and kmer in exclude_filter:
+                continue
             hll.add(kmer)
     n_unique = int(len(hll))
-    print(f"Estimated {n_unique} unique {k}-mers.")
-    return n_unique
+    print(f"Estimated {n_unique} unique {k}-mers out of {total_kmers} total k-mers.")
+    return n_unique, total_kmers
 
 def determine_best_kmer_length(contamination_fasta: str) -> int:
     """
@@ -76,20 +81,29 @@ def main():
                         help='Expected number of unique k-mers. If not provided, it will be estimated.')
     parser.add_argument('-m', '--max-memory', type=float,
                         help='Maximum memory in GB for the Bloom filter. Overrides false positive rate if set.')
-
+    parser.add_argument('-x', '--exclude-filter',
+                        help='Bloom filter file to exclude kmers from.')
+    
     args = parser.parse_args()
 
     # Determine k-mer length if not provided
-    if args.kmer_length:
-        k = args.kmer_length
+    if args.exclude_filter:
+        print("Loading exclude bloom filter...")
+        exclude_filter = BloomFilter.load(args.exclude_filter)
+        k = exclude_filter.kmer_length
+        print(f"Using k-mer length {k} from the exclude bloom filter.")
     else:
-        k = determine_best_kmer_length(args.contamination_fasta)
+        if args.kmer_length:
+            k = args.kmer_length
+        else:
+            k = determine_best_kmer_length(args.contamination_fasta)
 
     if args.expected_elements:
         n_unique = args.expected_elements
+        total_kmers = None
     else:
-        n_unique = estimate_unique_kmers(args.contamination_fasta, k)
-
+        n_unique, total_kmers = estimate_unique_kmers(args.contamination_fasta, k, exclude_filter if args.exclude_filter else None)
+        
     if args.max_memory:
         # Calculate false positive rate based on max memory
         max_bits = args.max_memory * 8 * (1024 ** 3)  # Convert GB to bits
@@ -106,11 +120,21 @@ def main():
     print(f"Number of hash functions: {bloom_filter.hash_count}")
 
     print("Building Bloom filter...")
-    for record in tqdm(SeqIO.parse(args.contamination_fasta, "fasta"),desc="Building Bloom filter"):
+    total_kmers = 0
+    unique_kmers = 0
+    for record in tqdm(SeqIO.parse(args.contamination_fasta, "fasta"), desc="Building Bloom filter"):
         seq = str(record.seq).upper()
         for kmer in generate_kmers(seq, k):
+            total_kmers += 1
+            if args.exclude_filter and kmer in exclude_filter:
+                continue
             bloom_filter.add(kmer)
-    print("Bloom filter built.")
+            unique_kmers += 1
+    if total_kmers > 0:
+        percent_unique = (unique_kmers / total_kmers) * 100
+        print(f"{percent_unique:.2f}% of k-mers are unique and encoded in the Bloom filter.")
+    else:
+        print("No k-mers were processed.")
 
     bloom_filter.save(args.output_filter)
     print(f"Bloom filter saved to {args.output_filter} and {args.output_filter}.params")

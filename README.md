@@ -54,6 +54,7 @@ kbuild -c contamination.fasta -o contamination_filter.bf
 - `max-memory`: Maximum memory in GB for the Bloom filter. Adjusts parameters to fit within this limit.
 - `false-positive-rate`: Desired false positive rate (default: 0.001).
 - `expected-elements`: Expected number of unique k-mers. If not provided, it is estimated using HyperLogLog.
+- `--exclude-filter`: A .bf filter file path. If provided, any k-mers present in the excluded filter will not be encoded into the new build filter.
 
 ### 2. Decontaminating Reads
 
