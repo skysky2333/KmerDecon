@@ -54,7 +54,7 @@ class BloomFilter:
             item (Any): The item to add.
         """
         for i in range(self.hash_count):
-            # Get a 64-bit hash as a tuple (hash1, hash2)
+            # Get two 64-bit hash as a tuple (hash1, hash2)
             hash1, hash2 = mmh3.hash64(item, i)
             digest = hash1 % self.size
             self.bit_array[digest] = True
