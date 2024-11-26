@@ -45,16 +45,18 @@ class BloomFilter:
         """
         k = (m / n) * math.log(2)
         return int(k)
-
+    
     def add(self, item: Any) -> None:
         """
-        Add an item to the Bloom filter.
+        Add an item to the Bloom filter using 64-bit hashes.
 
         Args:
             item (Any): The item to add.
         """
         for i in range(self.hash_count):
-            digest = mmh3.hash(item, i) % self.size
+            # Get a 64-bit hash as a tuple (hash1, hash2)
+            hash1, hash2 = mmh3.hash64(item, i)
+            digest = hash1 % self.size
             self.bit_array[digest] = True
 
     def __contains__(self, item: Any) -> bool:
@@ -68,7 +70,8 @@ class BloomFilter:
             bool: True if the item is probably in the filter, False if definitely not.
         """
         for i in range(self.hash_count):
-            digest = mmh3.hash(item, i) % self.size
+            hash1, hash2 = mmh3.hash64(item, i)
+            digest = hash1 % self.size
             if not self.bit_array[digest]:
                 return False
         return True
@@ -89,6 +92,15 @@ class BloomFilter:
             f.write(f"{self.false_positive_rate}\n")
             f.write(f"{self.kmer_length}\n")
             f.write(f"{len(self.bit_array)}\n")
+
+    def combine(self, bf: 'BloomFilter'):
+        """
+        Combines the input Bloom Filter. Only used for parallel process.
+
+        Args:
+            bf (BloomFilter): The Bloom Filter to combine with.
+        """
+        self.bit_array = self.bit_array | bf.bit_array
 
     @classmethod
     def load(cls, filename: str) -> 'BloomFilter':
