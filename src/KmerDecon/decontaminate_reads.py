@@ -6,7 +6,7 @@ from KmerDecon.bloom_filter import BloomFilter
 from KmerDecon.utils import generate_kmers
 from Bio import SeqIO
 import csv
-from cms import CountMinSketch
+from KmerDecon.cms import CountMinSketch
 def main():
     parser = argparse.ArgumentParser(
         description='Decontaminate sequencing reads using Bloom filters or Count_Mint_Sketch.'
