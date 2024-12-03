@@ -1,7 +1,7 @@
 # src/KmerDecon/build_bloom_filter.py
 import argparse
 from KmerDecon.bloom_filter import BloomFilter
-from cms import CountMinSketch
+from KmerDecon.cms import CountMinSketch
 from KmerDecon.utils import generate_kmers
 from Bio import SeqIO
 from hyperloglog import HyperLogLog
