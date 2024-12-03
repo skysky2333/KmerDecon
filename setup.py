@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="KmerDecon",
-    version="0.1.1",
+    version="0.1.2",
     author="Yuxiang Li, Yujia Feng, Xiaoyi Chen",
     description="A fast, memory-efficient tool for decontaminating sequencing reads using Bloom filters.",
     long_description=open('README.md').read(),
@@ -18,7 +18,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'kbuild=KmerDecon.build_bloom_filter:main',
+            'kbuild=KmerDecon.build_data_structure:main',
             'kdecon=KmerDecon.decontaminate_reads:main',
         ],
     },
