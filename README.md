@@ -40,28 +40,45 @@ KmerDecon is a fast, memory-efficient tool for decontaminating sequencing reads 
 
 ## Usage
 
-### 1. Building the Bloom Filter
+### 1. Building the Bloom Filter or CountMin sketches
 
 Generate a Bloom filter from contamination source sequences. Use `kbuild --help` for more detail.
 
 ```
-kbuild -c contamination.fasta -o contamination_filter.bf
+kbuild -c contamination.fasta -s bloom -o contamination_filter.bf
+```
+Generate a CountMin sketches from contamination source sequences. Use `kbuild --help` for more detail.
+
+```
+kbuild -c contamination.fasta -s cms -o contamination_filter.bf
 ```
 
 **Optional Arguments:**
 
 - `kmer-length`: Length of k-mers to generate (e.g., 31). If not provided, the tool determines the optimal k-mer length automatically.
+- `expected-elements`: Expected number of unique k-mers. If not provided, it is estimated using HyperLogLog.
+- `exclude-filter`: A .bf filter or .cms file path. If provided, any k-mers present in the excluded filter will not be encoded into the new build filter.
+if choose build bloom filter:
+
 - `max-memory`: Maximum memory in GB for the Bloom filter. Adjusts parameters to fit within this limit.
 - `false-positive-rate`: Desired false positive rate (default: 0.001).
-- `expected-elements`: Expected number of unique k-mers. If not provided, it is estimated using HyperLogLog.
-- `exclude-filter`: A .bf filter file path. If provided, any k-mers present in the excluded filter will not be encoded into the new build filter.
+
+if choose build countmin sketch:
+- `width-of-CountMinSketch`: The depth of Count_mint_sketch
+- `depth-of-CountMinSketch`: The depth of Count_mint_sketch
+- `error-rate`: The error rate of Count-Min Sketch (default: 0.01)
 
 ### 2. Decontaminating Reads
 
 Filter out contaminated reads from your sequencing data. Use `kdecon --help` for more detail.
 
+Use bloom filter:
 ```
-kdecon -i reads.fastq -b example_filter/hg38.bf -o output
+kdecon -i reads.fastq -d example_filter/hg38.bf -s bloom -o output
+```
+Use countmin sketch:
+```
+kdecon -i reads.fastq -d example_filter/hg38.cms -s cms -o output
 ```
 
 **Optional Arguments:**
