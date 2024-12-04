@@ -1,7 +1,7 @@
 # src/KmerDecon/build_bloom_filter.py
 import argparse
 from KmerDecon.bloom_filter import BloomFilter
-from cuckoofilter import CuckooFilter
+from kmerDecon.cuckoofilter import CuckooFilter
 from KmerDecon.utils import generate_kmers
 from Bio import SeqIO
 from hyperloglog import HyperLogLog
