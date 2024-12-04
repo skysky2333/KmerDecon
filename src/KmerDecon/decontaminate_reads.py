@@ -1,4 +1,3 @@
-# src/KmerDecon/decontaminate_reads.py
 import argparse
 import os
 import sys
@@ -6,17 +5,17 @@ from KmerDecon.bloom_filter import BloomFilter
 from KmerDecon.utils import generate_kmers
 from Bio import SeqIO
 import csv
-from KmerDecon.cms import CountMinSketch
+from cuckoofilter import CuckooFilter
 def main():
     parser = argparse.ArgumentParser(
-        description='Decontaminate sequencing reads using Bloom filters or Count_Mint_Sketch.'
+        description='Decontaminate sequencing reads using Bloom filters or Cuckoo filter.'
     )
     parser.add_argument('-i', '--input-reads', required=True,
                         help='Input FASTQ file or directory containing FASTQ files.')
-    parser.add_argument('-s', '--data-structure', choices=['bloom', 'cms'], required=True,
-                        help='Choose using a Bloom filter or CountMinSketch for contamination.')
+    parser.add_argument('-s', '--data-structure', choices=['bloom', 'cuckoo'], required=True,
+                        help='Choose using a Bloom filter or Cuckoo filter for contamination.')
     parser.add_argument('-d', '--file-directory', required=True,
-                        help='Bloom filter or Count Mint Sketch file or directory containing bloom filters or Count Mint Sketch for contamination.')
+                        help='Bloom filter or Cuckoo Filter file or directory containing bloom filters or Cuckoo filter for contamination.')
     parser.add_argument('-t', '--threshold', type=float, default=0.5,
                         help='Contamination threshold (default: 0.5).')
     parser.add_argument('-k', '--kmer-length', type=int,
@@ -150,30 +149,30 @@ def main():
             csv_file.close()
             print(f"States written to {states_filename}")
 
-    elif args.data_structure=='cms':
-        print("Loading Count Mint Sketch...")
-        cms_list = []
+    elif args.data_structure=='cuckoo':
+        print("Loading Cuckoo Filter...")
+        cuckoo_list = []
         if os.path.isfile(args.file_directory):
-            cms = CountMinSketch.load(args.file_directory)
+            cuckoo = CuckooFilter.load(args.file_directory)
             filter_name = os.path.basename(args.file_directory).split('.')[0]
-            cms_list.append((filter_name, cms))
+            cuckoo_list.append((filter_name, cuckoo))
         elif os.path.isdir(args.file_directory):
             for filename in os.listdir(args.file_directory):
-                if filename.endswith('.cms'):  # Assuming CountMinSketch files have .cms extension
+                if filename.endswith('.cuckoo'):  # Assuming CountMinSketch files have .cuckoo extension
                     bf_path = os.path.join(args.file_directory, filename)
-                    cms = CountMinSketch.load(bf_path)
+                    cuckoo = CuckooFilter.load(bf_path)
                     filter_name = os.path.basename(filename).split('.')[0]
-                    cms_list.append((filter_name, cms))
+                    cuckoo_list.append((filter_name, cuckoo))
         else:
             print(f"Error: {args.file_directory} is not a valid file or directory.")
             sys.exit(1)
 
-        print(f"Loaded {len(cms_list)} Count Min Sketch(es).")
+        print(f"Loaded {len(cuckoo_list)} Cuckoo Filter.")
 
         kmer_lengths = set()
 
-        for filter_name, cms in cms_list:
-            kmer_lengths.add(cms.kmer_length)
+        for filter_name, cuckoo in cuckoo_list:
+            kmer_lengths.add(cuckoo.kmer_length)
 
         if args.kmer_length:
             k = args.kmer_length
@@ -202,7 +201,7 @@ def main():
             states_filename = os.path.join(args.output_dir, 'states.csv')
             csv_file = open(states_filename, 'w', newline='')
             fieldnames = ['input_file']
-            for filter_name, _ in cms_list:
+            for filter_name, _ in cuckoo_list:
                 fieldnames.append(f"{filter_name}_avgSimilarity")
                 fieldnames.append(f"{filter_name}_percentReadsPassing")
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
@@ -225,8 +224,8 @@ def main():
                             continue
                         kmers = list(generate_kmers(seq, k))
                         keep_read = True
-                        for filter_name, cms in cms_list:
-                            count = sum(1 for kmer in kmers if cms.count(kmer)!=0)
+                        for filter_name, cuckoo in cuckoo_list:
+                            count = sum(1 for kmer in kmers if kmer in cuckoo)
                             fraction = count / num_kmers
                             if fraction >= args.threshold:
                                 keep_read = False
@@ -237,8 +236,8 @@ def main():
                     print(f"File {input_file}: {kept_reads}/{total_reads} reads kept. Output written to {output_filename}")
             elif args.mode == 'states':
                 total_reads = 0
-                fractions_sum = {filter_name: 0.0 for filter_name, _ in cms_list}
-                passing_counts = {filter_name: 0 for filter_name, _ in cms_list}
+                fractions_sum = {filter_name: 0.0 for filter_name, _ in cuckoo_list}
+                passing_counts = {filter_name: 0 for filter_name, _ in cuckoo_list}
                 for record in SeqIO.parse(input_file, "fastq"):
                     total_reads += 1
                     seq = str(record.seq).upper()
@@ -248,15 +247,14 @@ def main():
                     if num_kmers == 0:
                         continue 
                     kmers = list(generate_kmers(seq, k))
-                    for filter_name, cms in cms_list:
-                        count = sum(1 for kmer in kmers if cms.count(kmer)!=0)
-                        print(f"count={count}")
+                    for filter_name, cuckoo in cuckoo_list:
+                        count = sum(1 for kmer in kmers if kmer in cuckoo)
                         fraction = count / num_kmers
                         fractions_sum[filter_name] += fraction
                         if fraction < args.threshold:
                             passing_counts[filter_name] += 1
                 row = {'input_file': os.path.basename(input_file)}
-                for filter_name, _ in cms_list:
+                for filter_name, _ in cuckoo_list:
                     avg_fraction = fractions_sum[filter_name] / total_reads if total_reads > 0 else 0
                     percent_passing = (passing_counts[filter_name] / total_reads * 100) if total_reads > 0 else 0
                     row[f"{filter_name}_avgSimilarity"] = avg_fraction
