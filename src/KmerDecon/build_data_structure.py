@@ -1,7 +1,7 @@
 # src/KmerDecon/build_bloom_filter.py
 import argparse
 from KmerDecon.bloom_filter import BloomFilter
-from cms import CountMinSketch
+from cuckoofilter import CuckooFilter
 from KmerDecon.utils import generate_kmers
 from Bio import SeqIO
 from hyperloglog import HyperLogLog
@@ -73,7 +73,7 @@ def main():
                         help='Length of k-mers. If not provided, it will be determined automatically.')
     parser.add_argument('-o', '--output-filter', required=True, 
                         help='Output file for the data structure (either Bloom filter or CMS).')
-    parser.add_argument('-s', '--data-structure', choices=['bloom', 'cms'], required=True,
+    parser.add_argument('-s', '--data-structure', choices=['bloom', 'cuckoo'], required=True,
                         help='Choose whether to build a Bloom filter or CountMinSketch.')
     parser.add_argument('-p', '--false-positive-rate', type=float, default=0.01, 
                         help='Desired false positive rate for Bloom filter (default: 0.01).')
@@ -82,14 +82,11 @@ def main():
     parser.add_argument('-m', '--max-memory', type=float,
                         help='Maximum memory in GB for the Bloom filter. Overrides false positive rate if set.')
     parser.add_argument('-x', '--exclude-filter', 
-                        help='Bloom filter or CountMinSketch file to exclude kmers from.')
-    parser.add_argument('-w', '--width-of-CountMinSketch', type=int,
-                        help='The width of Count_mint_sketch')
-    parser.add_argument('-d', '--depth-of-CountMinSketch', type=int,
-                        help='The depth of Count_mint_sketch')
-    parser.add_argument('-r', '--error-rate', type=float,
-                        help='The error rate of Count-Min Sketch (default: 0.01)')
-
+                        help='Bloom filter or Cuckoo filter file to exclude kmers from.')
+    parser.add_argument('-cap', '--capacity-of-cuckoofilter', type=int, default=5000000,
+                        help='The capacity of cuckoo filter')
+    parser.add_argument('-f', '--fingerprint-size-of-cuckoofilter', type=int, default=1,
+                        help='The fingerprint size of cuckoo filter')
 
     args = parser.parse_args()
     # Determine k-mer length if not provided
@@ -148,12 +145,12 @@ def main():
 
 
 
-    elif args.data_structure=='cms':
+    elif args.data_structure=='cuckoo':
         if args.exclude_filter:
-            print("Loading exclude CountMinSketch...")
-            exclude_filter = CountMinSketch.load(args.exclude_filter)
+            print("Loading exclude cuckoo filter...")
+            exclude_filter = CuckooFilter.load(args.exclude_filter)
             k = exclude_filter.kmer_length
-            print(f"Using k-mer length {k} from the exclude CountMinSketch.")
+            print(f"Using k-mer length {k} from the exclude CuckooFilter.")
         else:
             if args.kmer_length:
                 k = args.kmer_length
@@ -165,19 +162,14 @@ def main():
         else:
             n_unique, total_kmers = estimate_unique_kmers(args.contamination_fasta, k, exclude_filter if args.exclude_filter else None)
         
+        if args.capacity_of_cuckoofilter and args.fingerprint_size_of_cuckoofilter:
+            capacity=args.capacity_of_cuckoofilter
+            fingerprint_size=args.fingerprint_size_of_cuckoofilter
 
-        if args.width_of_CountMinSketch and args.depth_of_CountMinSketch:
-            w=args.width_of_CountMinSketch
-            d=args.depth_of_CountMinSketch
-        elif args.error_rate:
-            error_rate=args.error_rate
-            w,d=CountMinSketch._optimal_params(n_unique,error_rate)
-        elif args.error_rate== None:
-            w,d=CountMinSketch._optimal_params(n_unique)
-        cms = CountMinSketch(w,d,k)
-        cms_size_bytes = cms.size / 8
-        print(f" size: {cms_size_bytes / (1024 ** 3):.4f} GB, est. file size {cms_size_bytes / (1024 ** 3)*30:.4f} MB")
-        print("Building Count_Min_Sketch...")
+        cuckoo = CuckooFilter(capacity,fingerprint_size,k)
+        cuckoo_size_bytes = cuckoo.size / 8
+        print(f" size: {cuckoo_size_bytes / (1024 ** 3):.4f} GB, est. file size {cuckoo_size_bytes / (1024 ** 3)*30:.4f} MB")
+        print("Building Cuckoo Filter...")
 
         total_kmers = 0
         unique_kmers = 0
@@ -187,18 +179,15 @@ def main():
                 total_kmers += 1
                 if args.exclude_filter and kmer in exclude_filter:
                     continue
-                cms.add(kmer)
+                cuckoo.insert(kmer)
                 unique_kmers += 1
         if total_kmers > 0:
             percent_unique = (unique_kmers / total_kmers) * 100
-            print(f"{percent_unique:.2f}% of k-mers are unique and encoded in the Count_Mint_Sketch.")
+            print(f"{percent_unique:.2f}% of k-mers are unique and encoded in the cuckoo filter.")
         else:
             print("No k-mers were processed.")
-
-        cms.save(args.output_filter)
-        print(f"Count_Mint_Sketch saved to {args.output_filter} and {args.output_filter}.params")
-        a=cms.count("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-        print(a)
+        cuckoo.save(args.output_filter)
+        print(f"cuckoo filter saved to {args.output_filter} and {args.output_filter}.params")
 
 if __name__ == "__main__":
     main()
