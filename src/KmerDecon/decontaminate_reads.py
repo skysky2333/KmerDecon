@@ -178,13 +178,13 @@ def main():
         if args.kmer_length:
             k = args.kmer_length
             if len(kmer_lengths) > 1 or (len(kmer_lengths) == 1 and k not in kmer_lengths):
-                print(f"Warning: Provided k-mer length ({k}) does not match the k-mer length(s) used in the CountMinSketches ({kmer_lengths}).")
+                print(f"Warning: Provided k-mer length ({k}) does not match the k-mer length(s) used in the Cuckoo Filter ({kmer_lengths}).")
         else:
             if len(kmer_lengths) == 1:
                 k = kmer_lengths.pop()
-                print(f"Using k-mer length {k} from the CountMinSketches .")
+                print(f"Using k-mer length {k} from the Cuckoo Filter .")
             else:
-                print(f"Error: Multiple k-mer lengths found in CountMinSketches ({kmer_lengths}). Please specify --kmer-length.")
+                print(f"Error: Multiple k-mer lengths found in Cuckoo Filter ({kmer_lengths}). Please specify --kmer-length.")
                 sys.exit(1)
 
         input_files = []
