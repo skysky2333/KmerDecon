@@ -41,6 +41,7 @@ def main():
                         help='FASTA file with contamination sequences.')
     parser.add_argument('-k', '--kmer-length', type=int, 
                         help='Length of k-mers. Default is 31.')
+                        help='Length of k-mers. Default is 31.')
     parser.add_argument('-o', '--output-filter', required=True, 
                         help='Output file for the data structure (either Bloom filter or CMS).')
     parser.add_argument('-s', '--data-structure', choices=['bloom', 'cuckoo'], required=True,
