@@ -1,11 +1,13 @@
 [![PyPI version](https://img.shields.io/pypi/v/KmerDecon.svg)](https://pypi.org/project/KmerDecon/)
 # KmerDecon
 
-KmerDecon is a fast, memory-efficient tool for decontaminating sequencing reads using Bloom filters. It generate detailed reports of contaminants in sequencing data.
+KmerDecon is a fast, memory-efficient tool for decontaminating sequencing reads using Bloom filters or Cuckoo filters. It generate detailed reports of contaminants in sequencing data.
+
 ## Authors
 - Yujia Feng
 - Xiaoyi Chen
 - Yuxiang Li
+
 
 ## Features
 
@@ -50,23 +52,21 @@ kbuild -c contamination.fasta -s bloom -o contamination_filter.bf
 Generate a CountMin sketches from contamination source sequences. Use `kbuild --help` for more detail.
 
 ```
-kbuild -c contamination.fasta -s cms -o contamination_filter.bf
+kbuild -c contamination.fasta -s cuckoo -o contamination_filter.cf 
 ```
+
 
 **Optional Arguments:**
 
 - `kmer-length`: Length of k-mers to generate (e.g., 31). If not provided, the tool determines the optimal k-mer length automatically.
 - `expected-elements`: Expected number of unique k-mers. If not provided, it is estimated using HyperLogLog.
 - `exclude-filter`: A .bf filter or .cms file path. If provided, any k-mers present in the excluded filter will not be encoded into the new build filter.
-if choose build bloom filter:
-
 - `max-memory`: Maximum memory in GB for the Bloom filter. Adjusts parameters to fit within this limit.
 - `false-positive-rate`: Desired false positive rate (default: 0.001).
 
-if choose build countmin sketch:
-- `width-of-CountMinSketch`: The depth of Count_mint_sketch
-- `depth-of-CountMinSketch`: The depth of Count_mint_sketch
-- `error-rate`: The error rate of Count-Min Sketch (default: 0.01)
+if choose build Cuckoo filter:
+- `capacity-of-cuckoofilter`: The capacity of cuckoo filter
+- `fingerprint-size-of-cuckoofilter`: The depth of cuckoo filter
 
 ### 2. Decontaminating Reads
 
@@ -78,7 +78,7 @@ kdecon -i reads.fastq -d example_filter/hg38.bf -s bloom -o output
 ```
 Use countmin sketch:
 ```
-kdecon -i reads.fastq -d example_filter/hg38.cms -s cms -o output
+kdecon -i reads.fastq -d example_filter/hg38.cf -s cuckoo -o output
 ```
 
 **Optional Arguments:**
@@ -104,6 +104,11 @@ Install dependencies with:
 ```bash
 pip install -r requirements.txt
 ```
+## Referenced Code
+ The python module of cuckoofilter and bucketis are adapted from:
+ Author: Michael The
+ Repository: https://github.com/michael-the1/python-cuckoo/tree/master
+ License: MIT
 
 ## Contributing
 
