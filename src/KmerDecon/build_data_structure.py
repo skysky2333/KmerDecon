@@ -1,7 +1,7 @@
 # src/KmerDecon/build_bloom_filter.py
 import argparse
 from KmerDecon.bloom_filter import BloomFilter
-from kmerDecon.cuckoofilter import CuckooFilter
+from KmerDecon.cuckoofilter import CuckooFilter
 from KmerDecon.utils import generate_kmers
 from Bio import SeqIO
 from hyperloglog import HyperLogLog
@@ -74,7 +74,7 @@ def main():
     parser.add_argument('-o', '--output-filter', required=True, 
                         help='Output file for the data structure (either Bloom filter or CMS).')
     parser.add_argument('-s', '--data-structure', choices=['bloom', 'cuckoo'], required=True,
-                        help='Choose whether to build a Bloom filter or CountMinSketch.')
+                        help='Choose whether to build a Bloom filter or Cuckoo filter.')
     parser.add_argument('-p', '--false-positive-rate', type=float, default=0.01, 
                         help='Desired false positive rate for Bloom filter (default: 0.01).')
     parser.add_argument('-e', '--expected-elements', type=int, 
@@ -83,9 +83,9 @@ def main():
                         help='Maximum memory in GB for the Bloom filter. Overrides false positive rate if set.')
     parser.add_argument('-x', '--exclude-filter', 
                         help='Bloom filter or Cuckoo filter file to exclude kmers from.')
-    parser.add_argument('-cap', '--capacity-of-cuckoofilter', type=int, default=5000000,
+    parser.add_argument('-cap', '--capacity-of-cuckoofilter', type=int,
                         help='The capacity of cuckoo filter')
-    parser.add_argument('-f', '--fingerprint-size-of-cuckoofilter', type=int, default=1,
+    parser.add_argument('-f', '--fingerprint-size-of-cuckoofilter', type=int,
                         help='The fingerprint size of cuckoo filter')
 
     args = parser.parse_args()
@@ -162,18 +162,37 @@ def main():
         else:
             n_unique, total_kmers = estimate_unique_kmers(args.contamination_fasta, k, exclude_filter if args.exclude_filter else None)
         
+        if args.max_memory:
+            # Calculate false positive rate based on max memory
+            max_bits = args.max_memory * 8 * (1024 ** 3)  # Convert GB to bits
+            p = math.exp(- (max_bits * (math.log(2) ** 2)) / n_unique)
+            false_positive_rate = p
+            print(f"Adjusted false positive rate to {false_positive_rate:.6f} based on max memory {args.max_memory} GB.")
+        else:
+            false_positive_rate = args.false_positive_rate
+        if false_positive_rate<0.002:
+            bucket_size=4
+        else:
+            bucket_size=2
+
         if args.capacity_of_cuckoofilter and args.fingerprint_size_of_cuckoofilter:
             capacity=args.capacity_of_cuckoofilter
             fingerprint_size=args.fingerprint_size_of_cuckoofilter
-
-        cuckoo = CuckooFilter(capacity,fingerprint_size,k)
-        cuckoo_size_bytes = cuckoo.size / 8
-        print(f" size: {cuckoo_size_bytes / (1024 ** 3):.4f} GB, est. file size {cuckoo_size_bytes / (1024 ** 3)*30:.4f} MB")
+        else:
+            fingerprint_size=int(math.log2(1 / false_positive_rate)+math .log2(2*bucket_size))
+            if bucket_size==4:
+                capacity=int(total_kmers/0.95)
+            else:
+                capacity=int(total_kmers/0.84)
+            
+        cuckoo = CuckooFilter(capacity,fingerprint_size,k, bucket_size)
+        cuckoo_size_bytes = cuckoo.__sizeof__()
+        print(f" size: {cuckoo_size_bytes / (1024 ** 3):.4f} GB, est. file size {cuckoo_size_bytes / (1024 ** 2):.4f} MB")
         print("Building Cuckoo Filter...")
 
         total_kmers = 0
         unique_kmers = 0
-        for record in tqdm(SeqIO.parse(args.contamination_fasta, "fasta"), desc="Building Count_Mint_Sketch"):
+        for record in tqdm(SeqIO.parse(args.contamination_fasta, "fasta"), desc="Building Cuckoo filter"):
             seq = str(record.seq).upper()
             for kmer in generate_kmers(seq, k):
                 total_kmers += 1
