@@ -39,8 +39,7 @@ def main():
     parser = argparse.ArgumentParser(description="Build or load data structures (Bloom Filter or CMS) from contamination sequences.")
     parser.add_argument('-c', '--contamination-fasta', required=True, 
                         help='FASTA file with contamination sequences.')
-    parser.add_argument('-k', '--kmer-length', type=int, 
-                        help='Length of k-mers. Default is 31.')
+    parser.add_argument('-k', '--kmer-length', type=int, default=31,
                         help='Length of k-mers. Default is 31.')
     parser.add_argument('-o', '--output-filter', required=True, 
                         help='Output file for the data structure (either Bloom filter or CMS).')
@@ -74,17 +73,13 @@ def main():
             k = exclude_filter.kmer_length
             print(f"Using k-mer length {k} from the exclude bloom filter.")
         else:
-            if args.kmer_length:
-                k = args.kmer_length
-            else:
-                #default kmer-length=31
-                k = 31
-        #estimate number of unique kmer and total kmer
+            k = args.kmer_length
 
         if args.expected_elements:
             n_unique = args.expected_elements
             total_kmers = None
         else:
+            #estimate number of unique kmer and total kmer
             n_unique, total_kmers = estimate_unique_kmers(args.contamination_fasta, k, exclude_filter if args.exclude_filter else None)
             
         if args.max_memory:
@@ -95,11 +90,13 @@ def main():
             print(f"Adjusted false positive rate to {false_positive_rate:.6f} based on max memory {args.max_memory} GB.")
         else:
             false_positive_rate = args.false_positive_rate
+
         #build new bloom filter
         bloom_filter = BloomFilter(n_unique, false_positive_rate, k)
 
+        # calculate the size of the Bloom filter
         bloom_size_bytes = bloom_filter.size / 8
-        print(f"Bloom filter size: {bloom_size_bytes / (1024 ** 3):.4f} GB, est. file size {bloom_size_bytes / (1024 ** 3)*30:.4f} MB")
+        print(f"Bloom filter size: {bloom_size_bytes / (1024 ** 3):.4f} GB")
         print(f"Number of hash functions: {bloom_filter.hash_count}")
 
         print("Building Bloom filter...")
@@ -149,28 +146,22 @@ def main():
         else:
             #estimate the number of unique kmer and total kmer
             n_unique, total_kmers = estimate_unique_kmers(args.contamination_fasta, k, exclude_filter if args.exclude_filter else None)
-        
-        if args.max_memory:
-            # Calculate false positive rate based on max memory
-            max_bits = args.max_memory * 8 * (1024 ** 3)  # Convert GB to bits
-            p = math.exp(- (max_bits * (math.log(2) ** 2)) / n_unique)
-            false_positive_rate = p
-            print(f"Adjusted false positive rate to {false_positive_rate:.6f} based on max memory {args.max_memory} GB.")
-        else:
-            false_positive_rate = args.false_positive_rate
-            '''calculate the bucket size and estimate the size of fingerprint and capacity
-                the euqation get from https://stackoverflow.com/questions/57555236/how-to-size-a-cuckoo-filter
-            '''
-        if false_positive_rate<0.002:
+
+        '''calculate the bucket size and estimate the size of fingerprint and capacity
+            the euqation get from https://stackoverflow.com/questions/57555236/how-to-size-a-cuckoo-filter
+        '''
+        if args.false_positive_rate<0.002:
             bucket_size=4
         else:
             bucket_size=2
+        
+        print(f"Using bucket size of {bucket_size}")
 
         if args.capacity_of_cuckoofilter and args.fingerprint_size_of_cuckoofilter:
             capacity=args.capacity_of_cuckoofilter
             fingerprint_size=args.fingerprint_size_of_cuckoofilter
         else:
-            fingerprint_size=int(math.log2(1 / false_positive_rate)+math .log2(2*bucket_size))
+            fingerprint_size=int(math.log2(1 / args.false_positive_rate)+math .log2(2*bucket_size))
             if bucket_size==4:
                 capacity=int(total_kmers/0.95)
             else:
