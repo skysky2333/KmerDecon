@@ -27,19 +27,22 @@ def main():
                         
     args = parser.parse_args()
 
+    #build directory for output file
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
     elif not os.path.isdir(args.output_dir):
         print(f"Error: {args.output_dir} is not a directory.")
         sys.exit(1)
+    #if choose bloom filter as the data structure to decontaminate reads, load bloom filter
     if args.data_structure=='bloom':
         print("Loading Bloom filters...")
         bloom_filters = []
-
+        #load bloom filter file
         if os.path.isfile(args.file_directory):
             bloom_filter = BloomFilter.load(args.file_directory)
             filter_name = os.path.basename(args.file_directory).split('.')[0]
             bloom_filters.append((filter_name, bloom_filter))
+        #load bloom filter files 
         elif os.path.isdir(args.file_directory):
             for filename in os.listdir(args.file_directory):
                 if filename.endswith('.bf'):  # Assuming bloom filter files have .bf extension
@@ -52,7 +55,7 @@ def main():
             sys.exit(1)
 
         print(f"Loaded {len(bloom_filters)} bloom filter(s).")
-
+        #get kmer length
         kmer_lengths = set()
 
         for filter_name, bloom_filter in bloom_filters:
@@ -69,7 +72,7 @@ def main():
             else:
                 print(f"Error: Multiple k-mer lengths found in Bloom filters ({kmer_lengths}). Please specify --kmer-length.")
                 sys.exit(1)
-
+        #load input_files
         input_files = []
         if os.path.isfile(args.input_reads):
             input_files.append(args.input_reads)
@@ -80,7 +83,7 @@ def main():
         else:
             print(f"Error: {args.input_reads} is not a valid file or directory.")
             sys.exit(1)
-
+        #create cvs file for mode states
         if args.mode == 'states':
             states_filename = os.path.join(args.output_dir, 'states.csv')
             csv_file = open(states_filename, 'w', newline='')
@@ -90,7 +93,7 @@ def main():
                 fieldnames.append(f"{filter_name}_percentReadsPassing")
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
             writer.writeheader()
-
+        #when choose mode filter, delete the contaminated reads
         for input_file in input_files:
             print(f"Processing input file: {input_file}")
             if args.mode == 'filter':
@@ -109,15 +112,19 @@ def main():
                         kmers = list(generate_kmers(seq, k))
                         keep_read = True
                         for filter_name, bloom_filter in bloom_filters:
+                            #get the total number of kmers which in the bloom filter for each reads
                             count = sum(1 for kmer in kmers if kmer in bloom_filter)
                             fraction = count / num_kmers
                             if fraction >= args.threshold:
-                                keep_read = False
+                                #if the count propotion of kmer bigger than treshold, the read if contaminated DNA, do not keep the reads
+                                keep_read = False 
                                 break
                         if keep_read:
+                            #write keep reads in new fq file
                             SeqIO.write(record, out_f, "fastq")
                             kept_reads += 1
                     print(f"File {input_file}: {kept_reads}/{total_reads} reads kept. Output written to {output_filename}")
+            #if choose the mode states, write the .csv file
             elif args.mode == 'states':
                 total_reads = 0
                 fractions_sum = {filter_name: 0.0 for filter_name, _ in bloom_filters}
@@ -132,12 +139,15 @@ def main():
                         continue 
                     kmers = list(generate_kmers(seq, k))
                     for filter_name, bloom_filter in bloom_filters:
+                         #get the total number of kmers which in the bloom filter for each reads
                         count = sum(1 for kmer in kmers if kmer in bloom_filter)
                         fraction = count / num_kmers
                         fractions_sum[filter_name] += fraction
                         if fraction < args.threshold:
+                         #if the count propotion of kmer smaller than treshold, the read is not the contaminated DNA, the number of passed reads plus one
                             passing_counts[filter_name] += 1
                 row = {'input_file': os.path.basename(input_file)}
+                #write in the csv file
                 for filter_name, _ in bloom_filters:
                     avg_fraction = fractions_sum[filter_name] / total_reads if total_reads > 0 else 0
                     percent_passing = (passing_counts[filter_name] / total_reads * 100) if total_reads > 0 else 0
@@ -148,14 +158,18 @@ def main():
         if args.mode == 'states':
             csv_file.close()
             print(f"States written to {states_filename}")
+    
 
+    #if choose the cuckoo filter as the data structure to decontaminate reads, load cuckoo file...
     elif args.data_structure=='cuckoo':
         print("Loading Cuckoo Filter...")
         cuckoo_list = []
+        #load cuckoo file...
         if os.path.isfile(args.file_directory):
             cuckoo = CuckooFilter.load(args.file_directory)
             filter_name = os.path.basename(args.file_directory).split('.')[0]
             cuckoo_list.append((filter_name, cuckoo))
+        #load cuckoo files...
         elif os.path.isdir(args.file_directory):
             for filename in os.listdir(args.file_directory):
                 if filename.endswith('.cuckoo'):  # Assuming CountMinSketch files have .cuckoo extension
@@ -170,10 +184,10 @@ def main():
         print(f"Loaded {len(cuckoo_list)} Cuckoo Filter.")
 
         kmer_lengths = set()
-
+        #get appropriate kmer length
         for filter_name, cuckoo in cuckoo_list:
             kmer_lengths.add(cuckoo.kmer_length)
-
+        
         if args.kmer_length:
             k = args.kmer_length
             if len(kmer_lengths) > 1 or (len(kmer_lengths) == 1 and k not in kmer_lengths):
@@ -185,7 +199,7 @@ def main():
             else:
                 print(f"Error: Multiple k-mer lengths found in Cuckoo Filter ({kmer_lengths}). Please specify --kmer-length.")
                 sys.exit(1)
-
+        #load input files
         input_files = []
         if os.path.isfile(args.input_reads):
             input_files.append(args.input_reads)
@@ -196,7 +210,7 @@ def main():
         else:
             print(f"Error: {args.input_reads} is not a valid file or directory.")
             sys.exit(1)
-
+        #prapare .csv file for mode states
         if args.mode == 'states':
             states_filename = os.path.join(args.output_dir, 'states.csv')
             csv_file = open(states_filename, 'w', newline='')
@@ -214,6 +228,7 @@ def main():
                 with open(output_filename, 'w') as out_f:
                     total_reads = 0
                     kept_reads = 0
+                    #use SeqIO get reads from .fq files
                     for record in SeqIO.parse(input_file, "fastq"):
                         total_reads += 1
                         seq = str(record.seq).upper()
@@ -225,15 +240,19 @@ def main():
                         kmers = list(generate_kmers(seq, k))
                         keep_read = True
                         for filter_name, cuckoo in cuckoo_list:
+                        #get the total number of kmers which in the bloom filter for each reads
                             count = sum(1 for kmer in kmers if kmer in cuckoo)
                             fraction = count / num_kmers
+                            #if the count propotion of kmer bigger than treshold, the read if contaminated DNA, do not keep the reads
                             if fraction >= args.threshold:
                                 keep_read = False
                                 break
                         if keep_read:
+                            #write the keeped reads in new .fq file
                             SeqIO.write(record, out_f, "fastq")
                             kept_reads += 1
                     print(f"File {input_file}: {kept_reads}/{total_reads} reads kept. Output written to {output_filename}")
+            #if choose mode states, write average similarity and passing percent in .csv file
             elif args.mode == 'states':
                 total_reads = 0
                 fractions_sum = {filter_name: 0.0 for filter_name, _ in cuckoo_list}
@@ -251,6 +270,7 @@ def main():
                         count = sum(1 for kmer in kmers if kmer in cuckoo)
                         fraction = count / num_kmers
                         fractions_sum[filter_name] += fraction
+                        #if the count propotion of kmer smaller than treshold, the read is not the contaminated DNA, the number of passed reads plus one
                         if fraction < args.threshold:
                             passing_counts[filter_name] += 1
                 row = {'input_file': os.path.basename(input_file)}
