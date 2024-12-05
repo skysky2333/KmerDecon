@@ -106,8 +106,11 @@ pip install -r requirements.txt
 ```
 ## Referenced Code
  The python module of cuckoofilter and bucket are adapted from:
+
  Author: Michael The
+
  Repository: https://github.com/michael-the1/python-cuckoo/tree/master
+ 
  License: MIT
 
 ## Contributing
