@@ -35,42 +35,12 @@ def estimate_unique_kmers(contamination_fasta: str, k: int, exclude_filter: Bloo
     print(f"Estimated {n_unique} unique {k}-mers out of {total_kmers} total k-mers.")
     return n_unique, total_kmers
 
-def determine_best_kmer_length(contamination_fasta: str) -> int:
-    """
-    Automatically determine the best k-mer length based on sequence lengths.
-
-    Args:
-        contamination_fasta (str): Path to the contamination FASTA file.
-
-    Returns:
-        int: Suggested k-mer length.
-    """
-    print("Determining the best k-mer length...")
-    lengths = []
-    for record in tqdm(SeqIO.parse(contamination_fasta, "fasta"),desc="Determining the best k-mer length"):
-        lengths.append(len(record.seq))
-    if not lengths:
-        print("No sequences found in the contamination FASTA file.")
-        exit(1)
-    median_length = int(statistics.median(lengths))
-    suggested_k = median_length // 2
-    # Enforce reasonable bounds
-    if suggested_k < 21:
-        suggested_k = 21
-    elif suggested_k > 127:
-        suggested_k = 127
-    # Ensure k is odd
-    if suggested_k % 2 == 0:
-        suggested_k += 1
-    print(f"Suggested k-mer length: {suggested_k}")
-    return suggested_k
-
 def main():
     parser = argparse.ArgumentParser(description="Build or load data structures (Bloom Filter or CMS) from contamination sequences.")
     parser.add_argument('-c', '--contamination-fasta', required=True, 
                         help='FASTA file with contamination sequences.')
     parser.add_argument('-k', '--kmer-length', type=int, 
-                        help='Length of k-mers. If not provided, it will be determined automatically.')
+                        help='Length of k-mers. Default is 31.')
     parser.add_argument('-o', '--output-filter', required=True, 
                         help='Output file for the data structure (either Bloom filter or CMS).')
     parser.add_argument('-s', '--data-structure', choices=['bloom', 'cuckoo'], required=True,
@@ -89,7 +59,7 @@ def main():
                         help='The fingerprint size of cuckoo filter')
 
     args = parser.parse_args()
-    # Determine k-mer length if not provided
+    
     if args.data_structure=='bloom':
         if args.exclude_filter:
             print("Loading exclude bloom filter...")
@@ -100,7 +70,7 @@ def main():
             if args.kmer_length:
                 k = args.kmer_length
             else:
-                k = determine_best_kmer_length(args.contamination_fasta)
+                k = 31
 
         if args.expected_elements:
             n_unique = args.expected_elements
@@ -155,7 +125,7 @@ def main():
             if args.kmer_length:
                 k = args.kmer_length
             else:
-                k = determine_best_kmer_length(args.contamination_fasta)
+                k = 31
         if args.expected_elements:
             n_unique = args.expected_elements
             total_kmers = None
