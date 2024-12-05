@@ -79,6 +79,7 @@ def main():
                 #default kmer-length=31
                 k = 31
         #estimate number of unique kmer and total kmer
+
         if args.expected_elements:
             n_unique = args.expected_elements
             total_kmers = None
@@ -140,6 +141,7 @@ def main():
                 k = args.kmer_length
             else:
                 k = 31 #set default kmer length as 31
+
         if args.expected_elements:
             n_unique = args.expected_elements
             total_kmers = None
