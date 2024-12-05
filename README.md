@@ -76,7 +76,7 @@ Use bloom filter:
 ```
 kdecon -i reads.fastq -d example_filter/hg38.bf -s bloom -o output
 ```
-Use countmin sketch:
+Use Cuckoo filter :
 ```
 kdecon -i reads.fastq -d example_filter/hg38.cf -s cuckoo -o output
 ```
@@ -105,7 +105,7 @@ Install dependencies with:
 pip install -r requirements.txt
 ```
 ## Referenced Code
- The python module of cuckoofilter and bucketis are adapted from:
+ The python module of cuckoofilter and bucket are adapted from:
  Author: Michael The
  Repository: https://github.com/michael-the1/python-cuckoo/tree/master
  License: MIT
