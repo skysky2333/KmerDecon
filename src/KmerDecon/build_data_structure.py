@@ -148,7 +148,7 @@ def main():
             n_unique, total_kmers = estimate_unique_kmers(args.contamination_fasta, k, exclude_filter if args.exclude_filter else None)
 
         '''calculate the bucket size and estimate the size of fingerprint and capacity
-            the euqation get from https://stackoverflow.com/questions/57555236/how-to-size-a-cuckoo-filter
+            the equation get from https://stackoverflow.com/questions/57555236/how-to-size-a-cuckoo-filter
         '''
         if args.false_positive_rate<0.002:
             bucket_size=4
@@ -161,11 +161,13 @@ def main():
             capacity=args.capacity_of_cuckoofilter
             fingerprint_size=args.fingerprint_size_of_cuckoofilter
         else:
-            fingerprint_size=int(math.log2(1 / args.false_positive_rate)+math .log2(2*bucket_size))
+            fingerprint_size=math.ceil((math.log2(1 / args.false_positive_rate)+math .log2(2*bucket_size)))
+            print(f"Using fingerprint size of {fingerprint_size}")
             if bucket_size==4:
-                capacity=int(total_kmers/0.95)
+                capacity=math.ceil(total_kmers/0.95)
             else:
-                capacity=int(total_kmers/0.84)
+                capacity=math.ceil(total_kmers/0.84)
+            print(f"Using capacity size of {capacity}")
         #build new cuckoo filter
         cuckoo = CuckooFilter(capacity,fingerprint_size,k, bucket_size)
         cuckoo_size_bytes = cuckoo.__sizeof__()

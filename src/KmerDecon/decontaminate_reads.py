@@ -5,7 +5,7 @@ from KmerDecon.bloom_filter import BloomFilter
 from KmerDecon.utils import generate_kmers
 from Bio import SeqIO
 import csv
-from cuckoofilter import CuckooFilter
+from KmerDecon.cuckoofilter import CuckooFilter
 def main():
     parser = argparse.ArgumentParser(
         description='Decontaminate sequencing reads using Bloom filters or Cuckoo filter.'
