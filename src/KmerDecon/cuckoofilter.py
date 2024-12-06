@@ -4,9 +4,10 @@
 
 import mmh3
 import random
-import bucket
+import KmerDecon.bucket as bucket
 import gzip
 import pickle
+from bitarray import bitarray
 
 class CuckooFilter:
     '''
@@ -53,6 +54,8 @@ class CuckooFilter:
         '''
         self.size = self.size + 1
         fingerprint = self.fingerprint(item)
+        if self.contains(item):
+            return
         i1, i2 = self.calculate_index_pair(item, fingerprint)
 
         if self.buckets[i1].insert(fingerprint):
@@ -63,7 +66,8 @@ class CuckooFilter:
         i = random.choice((i1, i2))
         for kick_count in range(self.max_kicks):
             fingerprint = self.buckets[i].swap(fingerprint)
-            i = (i ^ self.index_hash(fingerprint)) % self.capacity
+            # i = (i ^ self.index_hash(fingerprint)) % self.capacity
+            i = (i ^ self.index_hash(fingerprint.tobytes())) % self.capacity
 
             if self.buckets[i].insert(fingerprint):
                 return i
@@ -95,7 +99,8 @@ class CuckooFilter:
     def calculate_index_pair(self, item, fingerprint):
         '''Calculate both possible indices for the item'''
         i1 = self.index_hash(item)
-        i2 = (i1 ^ self.index_hash(fingerprint)) % self.capacity
+        # i2 = (i1 ^ self.index_hash(fingerprint)) % self.capacity
+        i2 = (i1 ^ self.index_hash(fingerprint.tobytes())) % self.capacity
         return i1, i2
 
     def fingerprint(self, item):
@@ -105,7 +110,11 @@ class CuckooFilter:
         The length of the fingerprint is given by fingerprint_size.
         To calculate this fingerprint, we hash the string with MurmurHash3 and truncate the hash.
         '''
-        item_hash = mmh3.hash_bytes(item)
+        # item_hash = mmh3.hash_bytes(item)
+        # return item_hash[:self.fingerprint_size]
+
+        item_hash = bitarray()
+        item_hash.frombytes(mmh3.hash_bytes(item))
         return item_hash[:self.fingerprint_size]
 
     def load_factor(self):
