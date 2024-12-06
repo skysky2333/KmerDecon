@@ -212,11 +212,11 @@ Install dependencies with:
 pip install -r requirements.txt
 ```
 ## Referenced Code
- The python module of cuckoofilter and bucket are adapted from:
+ The python module of cuckoofilter is adapted from:
 
- Author: Michael The
+ Author: Huy Do
 
- Repository: https://github.com/michael-the1/python-cuckoo/tree/master
+ Repository: https://github.com/huydhn/cuckoo-filter/blob/master/cuckoo/filter.py
  
  License: MIT
 
