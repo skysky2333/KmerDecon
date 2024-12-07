@@ -85,16 +85,16 @@ chmod +x datasets
 
 ### 2. Downloading the Required Genomes
 
-We created 4 fasta files. One for the human genome, one for the mouse genome, one for the genomes for the genuses of (Arthrobacter, Burkholderia, Chryseobacterium, Ochrobactrum, Pseudomonas, Ralstonia, Rhodococcus, Sphingomonas, Corynebacterium, Propionibacterium and Streptococcus) which we refer to as common contaminants, and one for all bacteria.
+We created 5 fasta files. One for the human genome, one for the mouse genome, one for the genomes for the genuses of (Arthrobacter, Burkholderia, Chryseobacterium, Ochrobactrum, Pseudomonas, Ralstonia, Rhodococcus, Sphingomonas, Corynebacterium, Propionibacterium and Streptococcus) which we refer to as common contaminants, one for all bacteria, and one for fruit fly.
 
 **Download human genome:**
 ```
-./datasets download genome taxon human --reference --filename human
+./datasets download genome taxon human --reference --filename human.zip
 ```
 
 **Download mouse genome:**
 ```
-./datasets download genome taxon "mus musculus" --reference --filename mouse
+./datasets download genome taxon "mus musculus" --reference --filename mouse.zip
 ```
 
 **Download common contaminants genomes:**  
@@ -106,10 +106,16 @@ Then we simply combined each of the fasta files into one. You can also do this, 
 WARNIG: The combined size exceeds 20GB. These genomes were only used to generate simulated reads and was not used to build any data structures. If you do not wish to download this, we can provide you with the reads that we generated.
 
 ```
-./datasets download genome taxon 2 --reference --assembly-level chromosome,complete --filename bacteria
+./datasets download genome taxon 2 --reference --assembly-level chromosome,complete --filename bacteria.zip
 ```
 
 The downloaded genomes are then combined into one fasta file. The same `combine.py` script can be used to combine them.
+
+**Download fruit fly genome:**
+```
+./datasets download genome taxon 7227 --reference --assembly-level chromosome,complete --filename fruitfly.zip
+```
+
 
 ### 3. Building the Bloom filters
 
@@ -131,7 +137,11 @@ For the mouse genome:
 - 40min for HLL
 - 60min to build filter
 
-The HLL step can be skipped by providing the algorithm with the expected number of elements with the flag `-e`. We will provide this number for each of the Filters since we have already ran the program and know the number.
+For the fruit fly genome:
+- 4min for HLL
+- 7min to build filter
+
+The HLL step can be skipped by providing the algorithm with the expected number of elements with the flag `-e`. We will provide this number for each of the Filters since we have already ran the program and know the number. Use to `-n` to indicate the number of cores to use if you want to build it using parallel processing.
 
 
 **First build the human Bloom filter**
@@ -158,9 +168,24 @@ kbuild -s bloom -c <mouse genome> -x <human Bloom filter> -k 31 -o <output name>
 
 To skip the HLL step, include the flag `-e 2203333902`.
 
-### 4. Generating simulated reads
+**Build the fruit fly Bloom filter**
+```
+kbuild -s bloom -c <fruit fly genome> -k 31 -o <output name>
+```
 
-The simulated reads were generated using [InSilicoSeq](https://insilicoseq.readthedocs.io/en/latest/#). For each of the fasta files (4 in total), we generated 2 million reads only half of which were used (the files ending with R1) as it generates paired-end reads.
+To skip the HLL step, include the flag `-e 126346179`.
+
+### 4. Build the Cuckoo filter
+
+The cuckoo filter takes significantly longer to build compared to Bloom filters. The build time for the fruit fly Cuckoo filter took around 30 minutes. To build it run the following code:
+
+```
+kbuild -s cuckoo -c <fruit fly genome> -k 31 -o <output name>
+```
+
+### 5. Generating simulated reads
+
+The simulated reads were generated using [InSilicoSeq](https://insilicoseq.readthedocs.io/en/latest/#). For each of the fasta files (5 in total), we generated 2 million reads only half of which were used (the files ending with R1) as it generates paired-end reads.
 
 **Install the tool**
 ```
@@ -174,7 +199,7 @@ iss generate --genomes <fasta file> --model novaseq --n_reads 2M --output <outpu
 
 After generating the reads, two files will be created, ...R1.fastq and ...R2.fastq, only use the R1 file for our program.
 
-### 5. Decontaminating reads
+### 6. Decontaminating reads
 
 Use the `--mode states` to obtain the statistic described in our report.
 
@@ -198,6 +223,12 @@ common contaminants Bloom filter:
 mouse Bloom filter:
 - human reads
 - mouse reads
+
+fly Bloom filter:
+- fly reads
+
+fly Cuckoo filter:
+- fly reads
 
 ## Dependencies
 
