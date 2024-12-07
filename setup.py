@@ -14,7 +14,8 @@ setup(
         "bitarray>=2.1.0",
         "biopython>=1.78",
         "mmh3>=2.5.1",
-        "hyperloglog>=0.0.12"
+        "hyperloglog>=0.0.12",
+        "tqdm>=4.8.0"
     ],
     entry_points={
         'console_scripts': [
