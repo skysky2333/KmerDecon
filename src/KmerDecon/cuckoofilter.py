@@ -4,7 +4,6 @@
 
 import mmh3
 import random
-import KmerDecon.bucket as bucket
 import gzip
 import pickle
 from bitarray import bitarray
