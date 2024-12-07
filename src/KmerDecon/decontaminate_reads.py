@@ -5,8 +5,13 @@ from KmerDecon.bloom_filter import BloomFilter
 from KmerDecon.utils import generate_kmers
 from Bio import SeqIO
 import csv
-from cuckoofilter import CuckooFilter
+from KmerDecon.cuckoofilter import BCuckooFilter
+import time
+
+
+
 def main():
+    start_time = time.time()
     parser = argparse.ArgumentParser(
         description='Decontaminate sequencing reads using Bloom filters or Cuckoo filter.'
     )
@@ -166,7 +171,7 @@ def main():
         cuckoo_list = []
         #load cuckoo file...
         if os.path.isfile(args.file_directory):
-            cuckoo = CuckooFilter.load(args.file_directory)
+            cuckoo = BCuckooFilter.load(args.file_directory)
             filter_name = os.path.basename(args.file_directory).split('.')[0]
             cuckoo_list.append((filter_name, cuckoo))
         #load cuckoo files...
@@ -174,7 +179,7 @@ def main():
             for filename in os.listdir(args.file_directory):
                 if filename.endswith('.cuckoo'):  # Assuming CountMinSketch files have .cuckoo extension
                     bf_path = os.path.join(args.file_directory, filename)
-                    cuckoo = CuckooFilter.load(bf_path)
+                    cuckoo = BCuckooFilter.load(bf_path)
                     filter_name = os.path.basename(filename).split('.')[0]
                     cuckoo_list.append((filter_name, cuckoo))
         else:
@@ -284,5 +289,9 @@ def main():
         if args.mode == 'states':
             csv_file.close()
             print(f"States written to {states_filename}")
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"{elapsed_time:.2f} seconds was used to decontaminate")
 if __name__ == "__main__":
     main()
