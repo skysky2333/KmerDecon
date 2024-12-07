@@ -325,7 +325,7 @@ def main():
         #build new cuckoo filter
         cuckoo = BCuckooFilter(capacity,args.false_positive_rate,k, bucket_size)
         # cuckoo_size_bytes = cuckoo.__sizeof__()
-        print(f"size: {len(cuckoo.buckets) / (1024 ** 3):.4f} GB")
+        print(f"size: {len(cuckoo.buckets) / 8 / (1024 ** 3):.4f} GB")
         print("Building Cuckoo Filter...")
 
         total_kmers = 0
