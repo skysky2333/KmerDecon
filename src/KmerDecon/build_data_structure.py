@@ -197,7 +197,13 @@ def main():
             k = exclude_filter_bf.kmer_length
             print(f"Using k-mer length {k} from the exclude bloom filter.")
         else:
+            exclude_filter_bf = None
             k = args.kmer_length
+
+        if args.cpus > 1:
+            print("Since using parallel processing, loading the whole file into memory...")
+            records = list(SeqIO.parse(args.contamination_fasta, "fasta"))
+            print("finished loading sequences")
 
         if args.expected_elements:
             n_unique = args.expected_elements
@@ -205,9 +211,6 @@ def main():
             #estimate number of unique kmer and total kmer
 
             if args.cpus > 1:
-                print("Since using parallel processing, loading the whole file into memory...")
-                records = list(SeqIO.parse(args.contamination_fasta, "fasta"))
-                print("finished loading sequences")
                 n_unique = estimate_unique_kmers_parallel(records, k, args.cpus, exclude_filter_bf if args.exclude_filter else None)
             else:
                 n_unique = estimate_unique_kmers(args.contamination_fasta, k, exclude_filter_bf if args.exclude_filter else None)
