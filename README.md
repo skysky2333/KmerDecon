@@ -69,7 +69,7 @@ Use `-s cuckoo` for Cuckoo filter.
 ### Highlights
 
 - With default parameters, we achieves FPR = 0.002%, FNR = 0.05% on simulated human reads decontamination task.
-- KmerDecon is memory efficient and uses 10 bits / kmer. (Popular too Kraken2 uses 32 bits / kmer)
+- KmerDecon is memory efficient and uses 10 bits / kmer. (Popular tool Kraken2 uses 32 bits / kmer)
 - KmerDecon is fast and takse 5 min to filter 1 million reads of 150bp each (kraken2 takes ~8min, both on single thread)
 - Multi-threads parallel building supported.
 
